@@ -1,5 +1,12 @@
 # Değişiklik günlüğü
 
+## 5.0.1 — 2026-10-03
+
+- Windows/VDS açılışında ağın geç hazırlanması için sessiz, sınırlı yeniden deneme eklendi.
+- Başlangıç yöntemi VBS dosyasından kullanıcı kapsamlı `HKCU\...\Run` girdisine taşındı.
+- Motor başlatma kontrolü, süreç erken kapanırsa 30 saniye boşuna beklemeyecek şekilde düzeltildi.
+- Erişilemeyen yabancı `Update.exe` süreçleri Discord süreci sayılmıyor; Discord otomatik açılamasa bile yerel motor açık kalıyor.
+
 ## 5.0.0-rc — 2026-10-02
 
 - Üçüncü taraf proxy motorları ve kernel sürücüsü bağımlılığı kaldırıldı.

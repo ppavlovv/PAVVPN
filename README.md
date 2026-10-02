@@ -23,7 +23,7 @@ Arayüz `PAVVPN.exe`, bağlantı motoru `PAVVPN.Native.v5.exe` dosyasıdır. Mot
 - HTTPS sertifika doğrulaması kapatılmaz ve sisteme sertifika kurulmaz.
 - PAC diğer bütün alan adları için `DIRECT` döndürür.
 - Sistem DNS'i, hosts dosyası, kernel sürücüsü, servis ve zamanlanmış görev kullanılmaz.
-- Windows başlangıcı yalnız geçerli kullanıcının `Startup` klasöründeki `PAVVPN_AutoStart.vbs` girdisidir ve uygulamadan kapatılabilir.
+- Windows başlangıcı yalnız geçerli kullanıcının `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` altındaki `PAVVPN` girdisidir ve uygulamadan kapatılabilir. Açılışta ağ henüz hazır değilse uygulama hata penceresi göstermeden sınırlı olarak yeniden dener.
 - Kaldırıcı yalnız `%LOCALAPPDATA%\PAVVPN`, PAVVPN masaüstü kısayolu, başlangıç girdisi ve PAVVPN'in kesin PAC adresini temizler.
 
 Bu sınırlar sıfır hata veya sıfır açık garantisi değildir. Genel sürümden önce farklı Windows 10/11 makineleri ve farklı internet sağlayıcılarında saha testi yapılmalıdır.

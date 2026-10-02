@@ -120,6 +120,12 @@ foreach ($pavStartupName in @('PavDiscord_Auto.vbs','PAVVPN_AutoStart.vbs')) {
     $pavStartup = Join-Path ([Environment]::GetFolderPath('Startup')) $pavStartupName
     if (Test-Path -LiteralPath $pavStartup) { Remove-Item -LiteralPath $pavStartup -Force }
 }
+$pavRunKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+$pavRunValue = (Get-ItemProperty -LiteralPath $pavRunKey -Name 'PAVVPN' -ErrorAction SilentlyContinue).PAVVPN
+$pavExpectedGui = Join-Path $pavInstallRoot 'PAVVPN.exe'
+if ($pavRunValue -and $pavRunValue.IndexOf($pavExpectedGui, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+    Remove-ItemProperty -LiteralPath $pavRunKey -Name 'PAVVPN' -ErrorAction SilentlyContinue
+}
 
 Write-Output '[6/7] Eski ayrilmis web profilleri varsa kaldiriliyor...'
 $pavLegacyRoot = [IO.Path]::GetFullPath((Join-Path $pavLocalBase 'PAVDNS'))

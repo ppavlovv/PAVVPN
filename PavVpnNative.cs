@@ -130,7 +130,8 @@ namespace PavDiscord
                 catch (Exception ex) { Log("Chrome Discord ayari uygulanamadi: " + ex.Message); listener.Stop(); return 1; }
             }
             Ready = true;
-            if (launch && !LaunchDiscord()) { listener.Stop(); return 1; }
+            if (launch && !LaunchDiscord())
+                Log("Discord otomatik baslatilamadi; PAVVPN motoru web ve sonraki Discord acilisi icin etkin tutuluyor.");
             while (true) Thread.Sleep(1000);
         }
 
@@ -590,6 +591,10 @@ namespace PavDiscord
                     {
                         // Killing the parent also closes child processes from our initial snapshot.
                         if (ex is InvalidOperationException || ex is ArgumentException) continue;
+                        // A different elevated program may also be named Update.exe. If its
+                        // path cannot be inspected, it is not proven to belong to Discord and
+                        // must neither be killed nor allowed to stop the local proxy.
+                        if (ex is System.ComponentModel.Win32Exception) continue;
                         try { if (process.HasExited) continue; } catch (InvalidOperationException) { continue; }
                         Log("Eski Discord islemi kapatilamadi: " + ex.Message); return false;
                     }

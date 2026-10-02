@@ -94,8 +94,10 @@ try {
     }
     [PavVpn.ShellRefresh]::SHChangeNotify(0x08000000,0,[IntPtr]::Zero,[IntPtr]::Zero)
     $startupFile=Join-Path ([Environment]::GetFolderPath('Startup')) 'PAVVPN_AutoStart.vbs'
-    $q=[string][char]34
-    [IO.File]::WriteAllLines($startupFile,[string[]]@('Option Explicit','Dim shell',('Set shell = CreateObject('+$q+'WScript.Shell'+$q+')'),'WScript.Sleep 8000',('shell.Run '+$q+$q+$q+(Join-Path $installRoot $guiName)+$q+$q+' --startup'+$q+', 0, False')),[Text.Encoding]::ASCII)
+    if(Test-Path -LiteralPath $startupFile){Remove-Item -LiteralPath $startupFile -Force}
+    $runKey='HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+    $runCommand='"'+(Join-Path $installRoot $guiName)+'" --startup'
+    New-ItemProperty -LiteralPath $runKey -Name 'PAVVPN' -Value $runCommand -PropertyType String -Force | Out-Null
 
     Write-Output '[4/5] Native motor baslatiliyor ve dogrulaniyor...'
     $installedExe=Join-Path $installRoot $exeName

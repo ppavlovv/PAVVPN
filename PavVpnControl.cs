@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using Microsoft.Win32;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -84,9 +85,11 @@ namespace PavVpnDesktop
         static readonly Color Gold = Color.FromArgb(244, 183, 47);
         static readonly Color Green = Color.FromArgb(48, 209, 88);
         static readonly Color Muted = Color.FromArgb(143, 153, 173);
+        const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        const string StartupValueName = "PAVVPN";
         readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
         readonly string EnginePath;
-        readonly string StartupPath;
+        readonly string LegacyStartupPath;
         readonly StatusToggle Toggle;
         readonly Label Status;
         readonly Label Detail;
@@ -104,7 +107,7 @@ namespace PavVpnDesktop
         public MainForm(bool startHidden)
         {
             EnginePath = Path.Combine(BaseDir, "PAVVPN.Native.v5.exe");
-            StartupPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "PAVVPN_AutoStart.vbs");
+            LegacyStartupPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "PAVVPN_AutoStart.vbs");
             Text = "PAVVPN"; ClientSize = new Size(440, 610); BackColor = Bg; ForeColor = Color.White;
             FormBorderStyle = FormBorderStyle.None; MaximizeBox = false; StartPosition = FormStartPosition.CenterScreen;
             DoubleBuffered = true; Padding = new Padding(1);
@@ -155,8 +158,8 @@ namespace PavVpnDesktop
             Shown += delegate
             {
                 ApplyRoundedRegion();
-                Updating = true; StartWithWindows.Checked = File.Exists(StartupPath); Updating = false;
-                if (startHidden) { Hide(); ShowInTaskbar = false; SetConnection(true); }
+                Updating = true; StartWithWindows.Checked = IsStartupEnabled(); Updating = false;
+                if (startHidden) { Hide(); ShowInTaskbar = false; SetConnection(true, true); }
                 else BeginHealthCheck();
             };
             FormClosing += OnClosing;
@@ -258,6 +261,9 @@ namespace PavVpnDesktop
         }
 
         void SetConnection(bool enable)
+        { SetConnection(enable, false); }
+
+        void SetConnection(bool enable, bool automatic)
         {
             if (Busy) return;
             Busy = true; Toggle.Enabled = false; Poll.Stop(); Toggle.IsOn = enable;
@@ -265,32 +271,61 @@ namespace PavVpnDesktop
             Status.ForeColor = Gold; Detail.Text = "Ayarlar güvenli biçimde uygulanıyor";
             ThreadPool.QueueUserWorkItem(delegate
             {
-                if (enable) StartEngine(); else StopEngine();
-                Thread.Sleep(250);
-                bool active = IsEngineRunning();
+                bool active = false;
+                if (enable)
+                {
+                    // Windows/VDS oturum acilisinda ag gec hazir olabilir. Arayuzu
+                    // gizli tut, hata penceresi cikarma ve sinirli olarak yeniden dene.
+                    if (automatic) Thread.Sleep(8000);
+                    int attempts = automatic ? 8 : 1;
+                    for (int attempt = 0; attempt < attempts && !active; attempt++)
+                    {
+                        active = StartEngine();
+                        if (!active && automatic && attempt + 1 < attempts)
+                            Thread.Sleep(Math.Min(15000, 3000 + attempt * 2000));
+                    }
+                }
+                else
+                {
+                    StopEngine();
+                    active = IsEngineRunning();
+                }
                 try
                 {
                     BeginInvoke(new Action(delegate
                     {
                         Busy = false; Toggle.Enabled = true; RefreshState(active); Poll.Start();
-                        if (enable && !active) MessageBox.Show("Bağlantı başlatılamadı. pav_debug.log dosyasını kontrol edin.", "PAVVPN", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        if (enable && !active && !automatic) MessageBox.Show("Bağlantı başlatılamadı. pav_debug.log dosyasını kontrol edin.", "PAVVPN", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }));
                 }
                 catch { }
             });
         }
 
-        void StartEngine()
+        bool StartEngine()
         {
-            if (!File.Exists(EnginePath)) return;
-            if (IsEngineRunning()) return;
+            if (!File.Exists(EnginePath)) return false;
+            if (IsEngineRunning()) return true;
             if (IsProxyListening())
             {
                 for (int i = 0; i < 120 && IsProxyListening() && !IsEngineRunning(); i++) Thread.Sleep(250);
-                if (IsEngineRunning() || IsProxyListening()) return;
+                if (IsEngineRunning()) return true;
+                if (IsProxyListening()) return false;
             }
-            Process.Start(new ProcessStartInfo(EnginePath, "--launch") { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = BaseDir });
-            for (int i = 0; i < 120 && !IsEngineRunning(); i++) Thread.Sleep(250);
+            Process process = null;
+            try
+            {
+                process = Process.Start(new ProcessStartInfo(EnginePath, "--launch") { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = BaseDir });
+                for (int i = 0; i < 120; i++)
+                {
+                    if (IsEngineRunning()) return true;
+                    try { if (process != null && process.HasExited && !IsProxyListening()) break; } catch { break; }
+                    Thread.Sleep(250);
+                }
+                return IsEngineRunning();
+            }
+            catch { return false; }
+            finally { if (process != null) process.Dispose(); }
         }
 
         void StopEngine()
@@ -305,12 +340,27 @@ namespace PavVpnDesktop
         {
             try
             {
-                if (!enabled) { if (File.Exists(StartupPath)) File.Delete(StartupPath); return; }
-                string q = "\"";
-                string[] lines = { "Option Explicit", "Dim shell", "Set shell = CreateObject(" + q + "WScript.Shell" + q + ")", "WScript.Sleep 8000", "shell.Run " + q + q + q + Application.ExecutablePath + q + q + " --startup" + q + ", 0, False" };
-                File.WriteAllLines(StartupPath, lines, Encoding.ASCII);
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(StartupRegistryPath))
+                {
+                    if (enabled) key.SetValue(StartupValueName, StartupCommand(), RegistryValueKind.String);
+                    else key.DeleteValue(StartupValueName, false);
+                }
+                if (File.Exists(LegacyStartupPath)) File.Delete(LegacyStartupPath);
             }
             catch (Exception ex) { MessageBox.Show("Başlangıç ayarı değiştirilemedi: " + ex.Message, "PAVVPN", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+
+        string StartupCommand()
+        { return "\"" + Application.ExecutablePath + "\" --startup"; }
+
+        bool IsStartupEnabled()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(StartupRegistryPath, false))
+                    return key != null && string.Equals(Convert.ToString(key.GetValue(StartupValueName, "")), StartupCommand(), StringComparison.OrdinalIgnoreCase);
+            }
+            catch { return false; }
         }
 
         void RunUninstaller()
