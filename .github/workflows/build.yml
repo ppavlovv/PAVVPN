@@ -1,0 +1,38 @@
+name: windows-build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and self-test
+        shell: pwsh
+        run: .\build.ps1
+      - name: Static security checks
+        shell: pwsh
+        run: .\tests\static.ps1
+      - name: Verify installer scope
+        shell: pwsh
+        run: .\install.ps1 -VerifyOnly
+      - name: Build release package
+        shell: pwsh
+        run: .\prepare-release.ps1
+      - name: Upload unsigned release
+        uses: actions/upload-artifact@v4
+        with:
+          name: PAVVPN-v5-windows-unsigned
+          path: |
+            PAVVPN.exe
+            PAVVPN.GUI.sha256
+            PAVVPN.Native.v5.exe
+            PAVVPN.Native.v5.sha256
+            releases/*.zip

@@ -1,0 +1,15 @@
+*.log
+*.previous.log
+*.token
+*.exe
+*.sha256
+*.zip
+*.tmp
+*.bak
+/releases/
+/pavvpn-network-settings.json
+/pavdns-v4-override.json
+/.vs/
+/**/bin/
+/**/obj/
+/**/__pycache__/
