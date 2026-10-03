@@ -15,7 +15,7 @@ Kapsam dışı: aynı Windows hesabında zaten kod çalıştırabilen zararlı y
 - Yalnız `127.0.0.1:1088` üzerinde dinler; LAN veya internet arayüzüne bağlanmaz.
 - Telemetri göndermez. Yerel hata günlüğü en fazla iki dosya halinde tutulur.
 - Sertifika deposunu, sistem DNS'ini ve `hosts` dosyasını değiştirmez.
-- Discord dışı proxy hedeflerini reddeder.
+- Discord alan adları ile yalnız Discord'un kullandığı tam eşleşmeli dosya yükleme sunucusuna izin verir; genel Google API ve diğer proxy hedeflerini reddeder.
 
 ## Açık bildirme
 

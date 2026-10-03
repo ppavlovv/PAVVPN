@@ -19,7 +19,7 @@ using Microsoft.Win32;
 [assembly: System.Reflection.AssemblyProduct("PAVVPN")]
 [assembly: System.Reflection.AssemblyCopyright("Copyright (c) 2026 PAVVPN contributors")]
 [assembly: System.Reflection.AssemblyVersion("5.0.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("5.0.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("5.0.2.0")]
 
 namespace PavDiscord
 {
@@ -28,6 +28,7 @@ namespace PavDiscord
     {
         const int Port = 1088;
         const string Version = "PAVVPN/5.0-native";
+        const string DiscordUploadHost = "discord-attachments-uploads-prd.storage.googleapis.com";
         const int MaxConnections = 256;
         static readonly object LogLock = new object();
         static readonly string BaseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -462,6 +463,7 @@ namespace PavDiscord
         {
             return "function FindProxyForURL(url, host) {\n" +
                 "  host = host.toLowerCase();\n" +
+                "  if (host === '" + DiscordUploadHost + "') return 'PROXY 127.0.0.1:1088';\n" +
                 "  var roots = ['discord.com','discord.gg','discordapp.com','discordapp.net','discord.media','dis.gd'];\n" +
                 "  for (var i = 0; i < roots.length; i++) {\n" +
                 "    if (host === roots[i] || dnsDomainIs(host, '.' + roots[i])) return 'PROXY 127.0.0.1:1088';\n" +
@@ -622,6 +624,7 @@ namespace PavDiscord
         }
         static bool IsDiscordHost(string host)
         {
+            if (host.Equals(DiscordUploadHost, StringComparison.OrdinalIgnoreCase)) return true;
             foreach (string suffix in new string[] { "discord.com", "discord.gg", "discordapp.com", "discordapp.net", "discord.media", "dis.gd" })
                 if (host.Equals(suffix, StringComparison.OrdinalIgnoreCase) || host.EndsWith("." + suffix, StringComparison.OrdinalIgnoreCase)) return true;
             return false;
@@ -886,9 +889,14 @@ namespace PavDiscord
         {
             try
             {
-                if (!AllowedDiscordTarget("discord.com", 443) || AllowedDiscordTarget("example.com", 443)) throw new IOException("Hedef filtresi hatali.");
+                if (!AllowedDiscordTarget("discord.com", 443) ||
+                    !AllowedDiscordTarget(DiscordUploadHost, 443) ||
+                    AllowedDiscordTarget("www.googleapis.com", 443) ||
+                    AllowedDiscordTarget("evil.storage.googleapis.com", 443) ||
+                    AllowedDiscordTarget("example.com", 443)) throw new IOException("Hedef filtresi hatali.");
                 string pac = ProxyPac();
-                if (!pac.Contains("PROXY 127.0.0.1:1088") || !pac.Contains("DIRECT") || pac.Contains("example.com")) throw new IOException("PAC filtresi hatali.");
+                if (!pac.Contains("PROXY 127.0.0.1:1088") || !pac.Contains("DIRECT") ||
+                    !pac.Contains(DiscordUploadHost) || pac.Contains("example.com")) throw new IOException("PAC filtresi hatali.");
                 byte[] hello = BuildSelfTestClientHello("discord.com");
                 byte[] split = SplitTlsClientHello(hello);
                 if (split.Length != hello.Length + 5 || !VerifyTlsRecordPayload(hello, split)) throw new IOException("TLS kayit bolme testi basarisiz.");

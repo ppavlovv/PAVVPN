@@ -1,5 +1,10 @@
 # Değişiklik günlüğü
 
+## 5.0.2 — 2026-10-03
+
+- Discord ekran görüntüsü ve dosya yüklemelerinde kullanılan `discord-attachments-uploads-prd.storage.googleapis.com` hedefi masaüstü/web PAC ve proxy izin listesine tam eşleşmeyle eklendi.
+- Genel `googleapis.com` trafiği kapalı tutuldu; öz test ve canlı stres testi bu güvenlik sınırını doğrulayacak şekilde genişletildi.
+
 ## 5.0.1 — 2026-10-03
 
 - Windows/VDS açılışında ağın geç hazırlanması için sessiz, sınırlı yeniden deneme eklendi.

@@ -17,7 +17,7 @@ Arayüz `PAVVPN.exe`, bağlantı motoru `PAVVPN.Native.v5.exe` dosyasıdır. Mot
 ## Güvenlik sınırı
 
 - Dinleyici yalnız `127.0.0.1:1088` adresine bağlanır.
-- Yalnız Discord alan adı kökleri ve tanımlı HTTPS/ses kontrol portları kabul edilir.
+- Yalnız Discord alan adı kökleri, Discord'un tam eşleşmeli dosya yükleme sunucusu ve tanımlı HTTPS/ses kontrol portları kabul edilir. Genel `googleapis.com` trafiğine izin verilmez.
 - En fazla 256 eşzamanlı yerel bağlantı işlenir.
 - Başlat/durdur kontrol istekleri her çalıştırmada üretilen 256 bit token ister.
 - HTTPS sertifika doğrulaması kapatılmaz ve sisteme sertifika kurulmaz.
@@ -60,7 +60,7 @@ Yerel stres testi:
 .\tests\stress.ps1 -Requests 200 -RestartCycles 8
 ```
 
-Test; gerçek Discord TLS isteklerini, SOCKS5 el sıkışmasını, Discord dışı hedef reddini, loopback sınırını ve art arda durdur/başlat çevrimlerini denetler.
+Test; gerçek Discord TLS isteklerini, ekran görüntüsü/dosya yükleme tünelini, genel Google API ve Discord dışı hedef reddini, SOCKS5 el sıkışmasını, loopback sınırını ve art arda durdur/başlat çevrimlerini denetler.
 
 ## Yayın paketi
 

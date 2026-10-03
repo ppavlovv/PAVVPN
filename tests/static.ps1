@@ -5,6 +5,8 @@ $guiSource=Get-Content -LiteralPath (Join-Path $root 'PavVpnControl.cs') -Raw
 foreach($forbidden in @('ciadpi','WinDivert','goodbyedpi','third_party')){if(($source+$guiSource).IndexOf($forbidden,[StringComparison]::OrdinalIgnoreCase)-ge 0){throw "Harici motor referansi bulundu: $forbidden"}}
 if($source -notmatch 'new TcpListener\(IPAddress\.Loopback, Port\)'){throw 'Dinleyici loopback ile sinirli degil.'}
 if($source -notmatch 'const int MaxConnections = 256'){throw 'Baglanti siniri bulunamadi.'}
+if($source -notmatch 'discord-attachments-uploads-prd\.storage\.googleapis\.com'){throw 'Discord dosya yukleme hedefi bulunamadi.'}
+if($source -match "var roots = \[[^\r\n]*googleapis"){throw 'Genis Google API alan adi hedefi kullaniliyor.'}
 if($source -notmatch 'GET /pavdns-ready HTTP/' -or $source -notmatch 'static volatile bool Ready'){throw 'Motor hazirlik kapisi bulunamadi.'}
 if($source -match 'if \(launch && !LaunchDiscord\(\)\) \{ listener\.Stop\(\); return 1; \}'){throw 'Discord otomatik acma hatasi motoru kapatiyor.'}
 if($source -notmatch 'System\.ComponentModel\.Win32Exception'){throw 'Yabanci/yuksek yetkili Update sureci toleransi bulunamadi.'}

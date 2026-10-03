@@ -51,6 +51,12 @@ try {
 $blocked = & curl.exe --silent --output NUL --write-out '%{http_connect}' --max-time 10 --proxy 'http://127.0.0.1:1088' 'https://example.com/'
 if ([string]$blocked -ne '403') { throw "Discord disi HTTPS CONNECT reddedilmedi (HTTP $blocked)." }
 
+$uploadConnect = & curl.exe --silent --output NUL --write-out '%{http_connect}' --max-time 15 --proxy 'http://127.0.0.1:1088' 'https://discord-attachments-uploads-prd.storage.googleapis.com/'
+if ([string]$uploadConnect -ne '200') { throw "Discord ekran goruntusu yukleme sunucusuna TLS tuneli kurulamadi (CONNECT $uploadConnect)." }
+
+$broadGoogle = & curl.exe --silent --output NUL --write-out '%{http_connect}' --max-time 10 --proxy 'http://127.0.0.1:1088' 'https://www.googleapis.com/'
+if ([string]$broadGoogle -ne '403') { throw "Genel Google API hedefi yanlislikla izin listesine girdi (HTTP $broadGoogle)." }
+
 $curlArgs = @('--parallel','--parallel-immediate','--parallel-max',[string][Math]::Min($Requests,128),'--silent','--show-error','--output','NUL','--write-out','%{http_code}\n','--max-time','25','--proxy','http://127.0.0.1:1088')
 for($i=0;$i -lt $Requests;$i++){ $curlArgs += 'https://discord.com/api/v9/gateway' }
 $process = Get-Process -Name 'PAVVPN.Native.v5' -ErrorAction Stop | Select-Object -First 1
@@ -73,6 +79,6 @@ for($cycle=1;$cycle -le $RestartCycles;$cycle++){
 }
 
 Write-Output "[OK] $Requests/$Requests gercek Discord TLS istegi HTTP 200 ($([Math]::Round($watch.Elapsed.TotalSeconds,2)) sn)."
-Write-Output "[OK] SOCKS5, dis alan 403 ve yalniz 127.0.0.1 dinleme testleri gecti."
+Write-Output "[OK] Discord dosya yukleme tuneli, SOCKS5, dar hedef listesi ve yalniz 127.0.0.1 dinleme testleri gecti."
 Write-Output "[OK] $RestartCycles/$RestartCycles durdur/baslat cevrimi gecti."
 Write-Output "[BILGI] Yuk sirasinda motor CPU farki ${cpuDelta} sn; son RAM ${ram} MiB."
